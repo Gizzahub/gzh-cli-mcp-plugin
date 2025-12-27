@@ -46,4 +46,8 @@ func init() {
 	rootCmd.AddCommand(newVersionCmd())
 	rootCmd.AddCommand(newEnableCmd())
 	rootCmd.AddCommand(newDisableCmd())
+	rootCmd.AddCommand(newInstallCmd())
+	rootCmd.AddCommand(newRemoveCmd())
+	rootCmd.AddCommand(newSearchCmd())
+	rootCmd.AddCommand(newInfoCmd())
 }
