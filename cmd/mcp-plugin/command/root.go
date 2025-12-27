@@ -44,4 +44,6 @@ func init() {
 	rootCmd.AddCommand(newListCmd())
 	rootCmd.AddCommand(newConfigCmd())
 	rootCmd.AddCommand(newVersionCmd())
+	rootCmd.AddCommand(newEnableCmd())
+	rootCmd.AddCommand(newDisableCmd())
 }
