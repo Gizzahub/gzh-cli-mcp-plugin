@@ -1,19 +1,10 @@
-# Binaries
+# Build artifacts
+build/
 bin/
-*.exe
-*.dll
-*.so
-*.dylib
 
-# Test binary, built with `go test -c`
-*.test
-
-# Output of the go coverage tool
-*.out
+# Coverage files
+coverage.out
 coverage.html
-
-# Dependency directories
-vendor/
 
 # IDE
 .idea/
@@ -21,9 +12,6 @@ vendor/
 *.swp
 *.swo
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
-
-# Build artifacts
-dist/
