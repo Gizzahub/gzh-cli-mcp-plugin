@@ -260,7 +260,7 @@ func checkHTTPHealth(url string) string {
 			return fmt.Sprintf("❌ Unreachable: %v", err)
 		}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
 		return fmt.Sprintf("✅ Reachable (HTTP %d)", resp.StatusCode)

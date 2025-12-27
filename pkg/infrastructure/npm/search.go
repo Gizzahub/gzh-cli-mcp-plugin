@@ -85,7 +85,7 @@ func (c *Client) Search(query string, limit int) (*SearchResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("search npm: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("npm search failed: status %d", resp.StatusCode)
@@ -112,7 +112,7 @@ func (c *Client) GetPackage(name string) (*PackageDetail, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get package: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("package '%s' not found", name)

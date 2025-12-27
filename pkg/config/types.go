@@ -6,14 +6,14 @@ package config
 
 // MCPServer represents an MCP server configuration.
 type MCPServer struct {
-	Name    string   `json:"name"`
-	Type    string   `json:"type"`    // "http" or "command"
-	URL     string   `json:"url"`     // For HTTP type
-	Command string   `json:"command"` // For command type (npx, uvx)
-	Args    []string `json:"args"`    // Command arguments
+	Name    string            `json:"name"`
+	Type    string            `json:"type"`    // "http" or "command"
+	URL     string            `json:"url"`     // For HTTP type
+	Command string            `json:"command"` // For command type (npx, uvx)
+	Args    []string          `json:"args"`    // Command arguments
 	Headers map[string]string `json:"headers"` // HTTP headers
-	Enabled bool     `json:"enabled"`
-	Source  string   `json:"source"`  // Config file source
+	Enabled bool              `json:"enabled"`
+	Source  string            `json:"source"` // Config file source
 }
 
 // ClaudeConfig represents the ~/.claude.json structure.

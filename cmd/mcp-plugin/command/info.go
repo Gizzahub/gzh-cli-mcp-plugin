@@ -48,7 +48,7 @@ func runInfo(packageName string) error {
 	// Package name
 	fmt.Printf("Package: %s\n", pkg.Name)
 	fmt.Printf("Version: %s\n", pkg.LatestVersion())
-	
+
 	if pkg.License != "" {
 		fmt.Printf("License: %s\n", pkg.License)
 	}

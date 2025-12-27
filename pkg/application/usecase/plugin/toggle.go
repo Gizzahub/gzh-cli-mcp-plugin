@@ -8,10 +8,10 @@ import (
 
 // ToggleResult represents the result of enabling/disabling a plugin.
 type ToggleResult struct {
-	PluginID    string
-	Enabled     bool
-	WasAlready  bool
-	Message     string
+	PluginID   string
+	Enabled    bool
+	WasAlready bool
+	Message    string
 }
 
 // ToggleUseCase handles enabling and disabling plugins.

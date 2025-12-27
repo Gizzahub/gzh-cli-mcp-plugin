@@ -95,7 +95,7 @@ func (r *Reader) readClaudeJSON() ([]MCPServer, error) {
 
 func (r *Reader) readPluginConfigs() ([]MCPServer, error) {
 	var servers []MCPServer
-	
+
 	cacheDir := filepath.Join(r.homeDir, ".claude", "plugins", "cache")
 	entries, err := os.ReadDir(cacheDir)
 	if err != nil {
@@ -106,7 +106,7 @@ func (r *Reader) readPluginConfigs() ([]MCPServer, error) {
 		if !entry.IsDir() {
 			continue
 		}
-		
+
 		// Look for .mcp.json in plugin subdirectories
 		pluginDir := filepath.Join(cacheDir, entry.Name())
 		subEntries, err := os.ReadDir(pluginDir)

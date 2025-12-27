@@ -27,7 +27,7 @@ func newListCmd() *cobra.Command {
 
 func runList(cmd *cobra.Command, args []string) error {
 	reader := config.NewReader()
-	
+
 	servers, err := reader.ListMCPServers()
 	if err != nil {
 		return fmt.Errorf("failed to list MCP servers: %w", err)
@@ -39,17 +39,17 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("Found %d MCP server(s):\n\n", len(servers))
-	
+
 	for _, server := range servers {
 		if listEnabledOnly && !server.Enabled {
 			continue
 		}
-		
+
 		status := "disabled"
 		if server.Enabled {
 			status = "enabled"
 		}
-		
+
 		fmt.Printf("  %s (%s)\n", server.Name, status)
 		fmt.Printf("    Type: %s\n", server.Type)
 		if server.URL != "" {

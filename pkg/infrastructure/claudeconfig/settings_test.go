@@ -146,9 +146,9 @@ func TestReader_PreservesUnknownFields(t *testing.T) {
 
 	// Create settings with extra fields
 	settings := map[string]interface{}{
-		"$schema":             "test-schema",
+		"$schema":               "test-schema",
 		"alwaysThinkingEnabled": true,
-		"customField":         "preserved",
+		"customField":           "preserved",
 		"enabledPlugins": map[string]bool{
 			"test@pub": false,
 		},

@@ -6,9 +6,9 @@ import (
 
 func TestToggleUseCase_Enable(t *testing.T) {
 	tests := []struct {
-		name       string
-		plugins    map[string]bool
-		pluginID   string
+		name        string
+		plugins     map[string]bool
+		pluginID    string
 		wantEnabled bool
 		wantAlready bool
 	}{

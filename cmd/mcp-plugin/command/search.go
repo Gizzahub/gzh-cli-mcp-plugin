@@ -61,10 +61,10 @@ func runSearch(query string, limit int) error {
 
 	for _, obj := range results.Objects {
 		pkg := obj.Package
-		
+
 		// Package name and version
 		fmt.Printf("  %s@%s\n", pkg.Name, pkg.Version)
-		
+
 		// Description (truncated)
 		if pkg.Description != "" {
 			desc := pkg.Description
