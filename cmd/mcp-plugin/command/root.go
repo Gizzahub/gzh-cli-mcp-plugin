@@ -50,4 +50,5 @@ func init() {
 	rootCmd.AddCommand(newRemoveCmd())
 	rootCmd.AddCommand(newSearchCmd())
 	rootCmd.AddCommand(newInfoCmd())
+	rootCmd.AddCommand(newServerCmd())
 }
