@@ -12,7 +12,7 @@ func TestReader_ReadSettings(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create test settings.json
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"$schema": "https://json.schemastore.org/claude-code-settings.json",
 		"enabledPlugins": map[string]bool{
 			"context7@claude-plugins-official": true,
@@ -62,7 +62,7 @@ func TestReader_EnableDisablePlugin(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create initial settings
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"enabledPlugins": map[string]bool{
 			"test@publisher": false,
 		},
@@ -105,7 +105,7 @@ func TestReader_EnableDisablePlugin(t *testing.T) {
 func TestReader_ListPlugins(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"enabledPlugins": map[string]bool{
 			"plugin1@pub": true,
 			"plugin2@pub": false,
@@ -145,7 +145,7 @@ func TestReader_PreservesUnknownFields(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create settings with extra fields
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"$schema":               "test-schema",
 		"alwaysThinkingEnabled": true,
 		"customField":           "preserved",
@@ -172,7 +172,7 @@ func TestReader_PreservesUnknownFields(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.Unmarshal(newData, &result); err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +185,7 @@ func TestReader_PreservesUnknownFields(t *testing.T) {
 		t.Error("alwaysThinkingEnabled should be preserved")
 	}
 
-	plugins := result["enabledPlugins"].(map[string]interface{})
+	plugins := result["enabledPlugins"].(map[string]any)
 	if plugins["test@pub"] != true {
 		t.Error("plugin should be enabled")
 	}

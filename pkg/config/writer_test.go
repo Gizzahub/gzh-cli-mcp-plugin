@@ -18,9 +18,9 @@ func TestWriter_SetPluginEnabled(t *testing.T) {
 	}
 
 	// Create initial settings
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"$schema": "test",
-		"enabledPlugins": map[string]interface{}{
+		"enabledPlugins": map[string]any{
 			"test@pub": false,
 		},
 	}
@@ -57,8 +57,8 @@ func TestWriter_ListPlugins(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	settings := map[string]interface{}{
-		"enabledPlugins": map[string]interface{}{
+	settings := map[string]any{
+		"enabledPlugins": map[string]any{
 			"plugin1@pub": true,
 			"plugin2@pub": false,
 		},
@@ -93,8 +93,8 @@ func TestWriter_PluginExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	settings := map[string]interface{}{
-		"enabledPlugins": map[string]interface{}{
+	settings := map[string]any{
+		"enabledPlugins": map[string]any{
 			"exists@pub": true,
 		},
 	}
@@ -130,8 +130,8 @@ func TestWriter_GetPluginStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	settings := map[string]interface{}{
-		"enabledPlugins": map[string]interface{}{
+	settings := map[string]any{
+		"enabledPlugins": map[string]any{
 			"enabled@pub":  true,
 			"disabled@pub": false,
 		},

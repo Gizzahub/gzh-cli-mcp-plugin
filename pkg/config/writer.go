@@ -32,15 +32,15 @@ func (w *Writer) SetPluginEnabled(pluginID string, enabled bool) error {
 	}
 
 	// Parse as generic map to preserve all fields
-	var settings map[string]interface{}
+	var settings map[string]any
 	if err := json.Unmarshal(data, &settings); err != nil {
 		return fmt.Errorf("failed to parse settings: %w", err)
 	}
 
 	// Get or create enabledPlugins map
-	enabledPlugins, ok := settings["enabledPlugins"].(map[string]interface{})
+	enabledPlugins, ok := settings["enabledPlugins"].(map[string]any)
 	if !ok {
-		enabledPlugins = make(map[string]interface{})
+		enabledPlugins = make(map[string]any)
 	}
 
 	// Update the plugin state
@@ -70,13 +70,13 @@ func (w *Writer) ListPlugins() (map[string]bool, error) {
 		return nil, fmt.Errorf("failed to read settings: %w", err)
 	}
 
-	var settings map[string]interface{}
+	var settings map[string]any
 	if err := json.Unmarshal(data, &settings); err != nil {
 		return nil, fmt.Errorf("failed to parse settings: %w", err)
 	}
 
 	result := make(map[string]bool)
-	enabledPlugins, ok := settings["enabledPlugins"].(map[string]interface{})
+	enabledPlugins, ok := settings["enabledPlugins"].(map[string]any)
 	if !ok {
 		return result, nil
 	}
@@ -129,15 +129,15 @@ func (w *Writer) AddMCPServer(name string, entry MCPServerEntry) error {
 		return fmt.Errorf("failed to read claude.json: %w", err)
 	}
 
-	var config map[string]interface{}
+	var config map[string]any
 	if err := json.Unmarshal(data, &config); err != nil {
 		return fmt.Errorf("failed to parse claude.json: %w", err)
 	}
 
 	// Get or create mcpServers map
-	mcpServers, ok := config["mcpServers"].(map[string]interface{})
+	mcpServers, ok := config["mcpServers"].(map[string]any)
 	if !ok {
-		mcpServers = make(map[string]interface{})
+		mcpServers = make(map[string]any)
 	}
 
 	// Check if server already exists
@@ -146,7 +146,7 @@ func (w *Writer) AddMCPServer(name string, entry MCPServerEntry) error {
 	}
 
 	// Add the new server
-	serverConfig := make(map[string]interface{})
+	serverConfig := make(map[string]any)
 	if entry.Type != "" {
 		serverConfig["type"] = entry.Type
 	}
@@ -191,12 +191,12 @@ func (w *Writer) RemoveMCPServer(name string) error {
 		return fmt.Errorf("failed to read claude.json: %w", err)
 	}
 
-	var config map[string]interface{}
+	var config map[string]any
 	if err := json.Unmarshal(data, &config); err != nil {
 		return fmt.Errorf("failed to parse claude.json: %w", err)
 	}
 
-	mcpServers, ok := config["mcpServers"].(map[string]interface{})
+	mcpServers, ok := config["mcpServers"].(map[string]any)
 	if !ok {
 		return fmt.Errorf("MCP server '%s' not found", name)
 	}
@@ -229,19 +229,19 @@ func (w *Writer) ListMCPServersGlobal() (map[string]MCPServerEntry, error) {
 		return nil, fmt.Errorf("failed to read claude.json: %w", err)
 	}
 
-	var config map[string]interface{}
+	var config map[string]any
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse claude.json: %w", err)
 	}
 
 	result := make(map[string]MCPServerEntry)
-	mcpServers, ok := config["mcpServers"].(map[string]interface{})
+	mcpServers, ok := config["mcpServers"].(map[string]any)
 	if !ok {
 		return result, nil
 	}
 
 	for name, v := range mcpServers {
-		cfg, ok := v.(map[string]interface{})
+		cfg, ok := v.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -253,7 +253,7 @@ func (w *Writer) ListMCPServersGlobal() (map[string]MCPServerEntry, error) {
 		if cmd, ok := cfg["command"].(string); ok {
 			entry.Command = cmd
 		}
-		if args, ok := cfg["args"].([]interface{}); ok {
+		if args, ok := cfg["args"].([]any); ok {
 			for _, arg := range args {
 				if s, ok := arg.(string); ok {
 					entry.Args = append(entry.Args, s)

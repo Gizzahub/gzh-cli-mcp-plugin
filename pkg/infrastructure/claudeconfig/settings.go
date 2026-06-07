@@ -11,12 +11,12 @@ import (
 
 // Settings represents the ~/.claude/settings.json structure.
 type Settings struct {
-	Schema         string                 `json:"$schema,omitempty"`
-	Permissions    *Permissions           `json:"permissions,omitempty"`
-	Hooks          map[string]interface{} `json:"hooks,omitempty"`
-	EnabledPlugins map[string]bool        `json:"enabledPlugins,omitempty"`
+	Schema         string          `json:"$schema,omitempty"`
+	Permissions    *Permissions    `json:"permissions,omitempty"`
+	Hooks          map[string]any  `json:"hooks,omitempty"`
+	EnabledPlugins map[string]bool `json:"enabledPlugins,omitempty"`
 	// Preserve other fields
-	Extra map[string]interface{} `json:"-"`
+	Extra map[string]any `json:"-"`
 }
 
 // Permissions represents permission settings.
@@ -80,7 +80,7 @@ func (r *Reader) WriteSettings(settings *Settings) error {
 	// Read existing file to preserve unknown fields
 	existingData, err := os.ReadFile(path)
 	if err == nil {
-		var existing map[string]interface{}
+		var existing map[string]any
 		if err := json.Unmarshal(existingData, &existing); err == nil {
 			// Update only the fields we manage
 			existing["enabledPlugins"] = settings.EnabledPlugins
