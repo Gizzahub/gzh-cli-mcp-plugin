@@ -19,9 +19,9 @@ lint: ## Run linter
 	@if command -v golangci-lint >/dev/null 2>&1; then \
 		golangci-lint run ./...; \
 	else \
-		echo "golangci-lint not installed, skipping..."; \
+		echo "golangci-lint not installed. Run: make install-tools" >&2; \
+		exit 1; \
 	fi
-	@echo "✅ Lint passed"
 
 validate: fmt vet lint test ## Run all quality checks
 	@echo "✅ All quality checks passed"
