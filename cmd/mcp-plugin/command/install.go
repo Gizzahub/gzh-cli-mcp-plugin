@@ -82,7 +82,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("--url is required for HTTP servers")
 		}
 		entry = config.MCPServerEntry{
-			Type: "http",
+			Type: config.TypeHTTP,
 			URL:  installURL,
 		}
 		fmt.Printf("Installing HTTP MCP server '%s'...\n", name)
@@ -96,7 +96,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			pkg = name
 		}
 		entry = config.MCPServerEntry{
-			Type:    "stdio",
+			Type:    config.TypeStdio,
 			Command: "uvx",
 			Args:    []string{pkg},
 		}
@@ -105,7 +105,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	case installCommand != "":
 		// Custom command server
 		entry = config.MCPServerEntry{
-			Type:    "stdio",
+			Type:    config.TypeStdio,
 			Command: installCommand,
 			Args:    installArgs,
 		}
@@ -123,7 +123,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		// Add -y flag if not already present
 		npxArgs := []string{"-y", pkg}
 		entry = config.MCPServerEntry{
-			Type:    "stdio",
+			Type:    config.TypeStdio,
 			Command: "npx",
 			Args:    npxArgs,
 		}

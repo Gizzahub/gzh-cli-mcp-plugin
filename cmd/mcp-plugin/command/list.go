@@ -45,9 +45,9 @@ func runList(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		status := "disabled"
+		status := statusDisabled
 		if server.Enabled {
-			status = "enabled"
+			status = statusEnabled
 		}
 
 		fmt.Printf("  %s (%s)\n", server.Name, status)

@@ -6,16 +6,15 @@ package command
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
 	"os"
-	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/gizzahub/gzh-cli-mcp-plugin/pkg/config"
 	"github.com/spf13/cobra"
 )
+
+// exportFilePerm is owner-only; exports may include auth headers.
+const exportFilePerm = 0o600
 
 func newConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -83,7 +82,7 @@ func newConfigPathsCmd() *cobra.Command {
 // ExportConfig represents the export file format.
 type ExportConfig struct {
 	Version    string                           `json:"version"`
-	ExportedAt string                           `json:"exportedAt"`
+	ExportedAt string                           `json:"exportedAt"` //nolint:tagliatelle // external protocol wire format
 	Servers    map[string]config.MCPServerEntry `json:"servers"`
 }
 
@@ -140,7 +139,7 @@ func runConfigExport(outputFile string) error {
 		return nil
 	}
 
-	if err := os.WriteFile(outputFile, output, 0644); err != nil {
+	if err := os.WriteFile(outputFile, output, exportFilePerm); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -182,6 +181,7 @@ Examples:
 }
 
 func runConfigImport(inputFile string, merge, dryRun bool) error {
+	// #nosec G304 -- inputFile is an intentional user-provided CLI path
 	data, err := os.ReadFile(inputFile)
 	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
@@ -198,53 +198,12 @@ func runConfigImport(inputFile string, merge, dryRun bool) error {
 	}
 
 	writer := config.NewWriter()
-	existingServers, _ := writer.ListMCPServersGlobal()
-
-	var added, updated, skipped int
-
-	for name, entry := range importConfig.Servers {
-		_, exists := existingServers[name]
-
-		if dryRun {
-			if exists {
-				if merge {
-					fmt.Printf("  [update] %s\n", name)
-					updated++
-				} else {
-					fmt.Printf("  [skip] %s (already exists)\n", name)
-					skipped++
-				}
-			} else {
-				fmt.Printf("  [add] %s\n", name)
-				added++
-			}
-			continue
-		}
-
-		if exists {
-			if merge {
-				// Remove then add to update
-				if err := writer.RemoveMCPServer(name); err != nil {
-					fmt.Printf("⚠️  Failed to update %s: %v\n", name, err)
-					continue
-				}
-				if err := writer.AddMCPServer(name, entry); err != nil {
-					fmt.Printf("⚠️  Failed to update %s: %v\n", name, err)
-					continue
-				}
-				updated++
-			} else {
-				fmt.Printf("⚠️  Skipped %s (already exists, use --merge to update)\n", name)
-				skipped++
-			}
-		} else {
-			if err := writer.AddMCPServer(name, entry); err != nil {
-				fmt.Printf("⚠️  Failed to add %s: %v\n", name, err)
-				continue
-			}
-			added++
-		}
+	existingServers, err := writer.ListMCPServersGlobal()
+	if err != nil {
+		existingServers = map[string]config.MCPServerEntry{}
 	}
+
+	added, updated, skipped := applyImport(writer, importConfig.Servers, existingServers, merge, dryRun)
 
 	if dryRun {
 		fmt.Printf("\nDry run summary: %d to add, %d to update, %d to skip\n", added, updated, skipped)
@@ -255,266 +214,67 @@ func runConfigImport(inputFile string, merge, dryRun bool) error {
 	return nil
 }
 
-func newConfigValidateCmd() *cobra.Command {
-	var verbose bool
-
-	cmd := &cobra.Command{
-		Use:   "validate",
-		Short: "Validate MCP configuration",
-		Long: `Validate all MCP server configurations for common issues.
-
-Checks performed:
-- URL syntax and reachability (for HTTP servers)
-- Command availability (for command-based servers)
-- Required fields presence
-- Duplicate server detection
-
-Examples:
-  # Quick validation
-  mcp-plugin config validate
-
-  # Verbose validation with details
-  mcp-plugin config validate --verbose`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runConfigValidate(verbose)
-		},
+func applyImport(
+	writer *config.Writer,
+	servers map[string]config.MCPServerEntry,
+	existing map[string]config.MCPServerEntry,
+	merge, dryRun bool,
+) (added, updated, skipped int) {
+	for name, entry := range servers {
+		_, exists := existing[name]
+		if dryRun {
+			a, u, s := dryRunImportEntry(name, exists, merge)
+			added += a
+			updated += u
+			skipped += s
+			continue
+		}
+		a, u, s := applyImportEntry(writer, name, entry, exists, merge)
+		added += a
+		updated += u
+		skipped += s
 	}
-
-	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Show detailed validation results")
-
-	return cmd
+	return added, updated, skipped
 }
 
-// ValidationResult represents a validation check result.
-type ValidationResult struct {
-	Server  string
-	Check   string
-	Status  string // "pass", "warn", "fail"
-	Message string
-}
-
-func runConfigValidate(verbose bool) error {
-	reader := config.NewReader()
-
-	servers, err := reader.ListMCPServers()
-	if err != nil {
-		return fmt.Errorf("failed to read servers: %w", err)
-	}
-
-	if len(servers) == 0 {
-		fmt.Println("No MCP servers configured.")
-		return nil
-	}
-
-	var results []ValidationResult
-	var passCount, warnCount, failCount int
-
-	// Check for duplicates
-	seen := make(map[string]string)
-	for _, server := range servers {
-		if existingSource, exists := seen[server.Name]; exists {
-			results = append(results, ValidationResult{
-				Server:  server.Name,
-				Check:   "duplicate",
-				Status:  "warn",
-				Message: fmt.Sprintf("Duplicate definition (also in %s)", existingSource),
-			})
-			warnCount++
-		}
-		seen[server.Name] = server.Source
-	}
-
-	for _, server := range servers {
-		// Check required fields
-		if server.Type == "" {
-			results = append(results, ValidationResult{
-				Server:  server.Name,
-				Check:   "type",
-				Status:  "warn",
-				Message: "Server type not specified (inferred)",
-			})
-			warnCount++
-		}
-
-		// Type-specific validation
-		switch server.Type {
-		case "http":
-			result := validateHTTPServer(server)
-			results = append(results, result)
-			switch result.Status {
-			case "pass":
-				passCount++
-			case "warn":
-				warnCount++
-			case "fail":
-				failCount++
-			}
-
-		case "command":
-			result := validateCommandServer(server)
-			results = append(results, result)
-			switch result.Status {
-			case "pass":
-				passCount++
-			case "warn":
-				warnCount++
-			case "fail":
-				failCount++
-			}
-
-		default:
-			if server.URL != "" {
-				result := validateHTTPServer(server)
-				results = append(results, result)
-				switch result.Status {
-				case "pass":
-					passCount++
-				case "warn":
-					warnCount++
-				case "fail":
-					failCount++
-				}
-			} else if server.Command != "" {
-				result := validateCommandServer(server)
-				results = append(results, result)
-				switch result.Status {
-				case "pass":
-					passCount++
-				case "warn":
-					warnCount++
-				case "fail":
-					failCount++
-				}
-			}
-		}
-	}
-
-	// Print results
-	if verbose {
-		fmt.Println("Validation Results:")
-		fmt.Println("─────────────────────────────────")
-		for _, r := range results {
-			var icon string
-			switch r.Status {
-			case "warn":
-				icon = "⚠️"
-			case "fail":
-				icon = "❌"
-			default:
-				icon = "✅"
-			}
-			fmt.Printf("%s %s [%s]: %s\n", icon, r.Server, r.Check, r.Message)
-		}
-		fmt.Println()
-	}
-
-	// Summary
-	fmt.Printf("Validation Summary: %d servers checked\n", len(servers))
-	fmt.Printf("  ✅ Pass: %d\n", passCount)
-	fmt.Printf("  ⚠️  Warnings: %d\n", warnCount)
-	fmt.Printf("  ❌ Failures: %d\n", failCount)
-
-	if failCount > 0 {
-		return fmt.Errorf("validation failed with %d errors", failCount)
-	}
-
-	return nil
-}
-
-func validateHTTPServer(server config.MCPServer) ValidationResult {
-	if server.URL == "" {
-		return ValidationResult{
-			Server:  server.Name,
-			Check:   "url",
-			Status:  "fail",
-			Message: "HTTP server has no URL configured",
-		}
-	}
-
-	// Validate URL syntax
-	parsedURL, err := url.Parse(server.URL)
-	if err != nil {
-		return ValidationResult{
-			Server:  server.Name,
-			Check:   "url_syntax",
-			Status:  "fail",
-			Message: fmt.Sprintf("Invalid URL: %v", err),
-		}
-	}
-
-	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-		return ValidationResult{
-			Server:  server.Name,
-			Check:   "url_scheme",
-			Status:  "fail",
-			Message: fmt.Sprintf("Invalid URL scheme: %s (expected http or https)", parsedURL.Scheme),
-		}
-	}
-
-	// Check reachability (with timeout)
-	client := &http.Client{Timeout: 3 * time.Second}
-	resp, err := client.Head(server.URL)
-	if err != nil {
-		// Check if it's a connection issue or auth required
-		if strings.Contains(err.Error(), "connection refused") {
-			return ValidationResult{
-				Server:  server.Name,
-				Check:   "reachability",
-				Status:  "warn",
-				Message: "Server unreachable (may be offline or firewalled)",
-			}
-		}
-		return ValidationResult{
-			Server:  server.Name,
-			Check:   "reachability",
-			Status:  "warn",
-			Message: fmt.Sprintf("Cannot verify: %v", err),
-		}
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-		return ValidationResult{
-			Server:  server.Name,
-			Check:   "reachability",
-			Status:  "pass",
-			Message: fmt.Sprintf("Reachable (HTTP %d - may require auth)", resp.StatusCode),
-		}
-	}
-
-	return ValidationResult{
-		Server:  server.Name,
-		Check:   "reachability",
-		Status:  "pass",
-		Message: fmt.Sprintf("Reachable (HTTP %d)", resp.StatusCode),
+func dryRunImportEntry(name string, exists, merge bool) (added, updated, skipped int) {
+	switch {
+	case exists && merge:
+		fmt.Printf("  [update] %s\n", name)
+		return 0, 1, 0
+	case exists:
+		fmt.Printf("  [skip] %s (already exists)\n", name)
+		return 0, 0, 1
+	default:
+		fmt.Printf("  [add] %s\n", name)
+		return 1, 0, 0
 	}
 }
 
-func validateCommandServer(server config.MCPServer) ValidationResult {
-	if server.Command == "" {
-		return ValidationResult{
-			Server:  server.Name,
-			Check:   "command",
-			Status:  "fail",
-			Message: "Command server has no command configured",
+func applyImportEntry(
+	writer *config.Writer,
+	name string,
+	entry config.MCPServerEntry,
+	exists, merge bool,
+) (added, updated, skipped int) {
+	if exists {
+		if !merge {
+			fmt.Printf("⚠️  Skipped %s (already exists, use --merge to update)\n", name)
+			return 0, 0, 1
 		}
-	}
-
-	// Check if command exists in PATH
-	path, err := exec.LookPath(server.Command)
-	if err != nil {
-		return ValidationResult{
-			Server:  server.Name,
-			Check:   "command",
-			Status:  "fail",
-			Message: fmt.Sprintf("Command '%s' not found in PATH", server.Command),
+		if err := writer.RemoveMCPServer(name); err != nil {
+			fmt.Printf("⚠️  Failed to update %s: %v\n", name, err)
+			return 0, 0, 0
 		}
+		if err := writer.AddMCPServer(name, entry); err != nil {
+			fmt.Printf("⚠️  Failed to update %s: %v\n", name, err)
+			return 0, 0, 0
+		}
+		return 0, 1, 0
 	}
-
-	return ValidationResult{
-		Server:  server.Name,
-		Check:   "command",
-		Status:  "pass",
-		Message: fmt.Sprintf("Command available: %s", path),
+	if err := writer.AddMCPServer(name, entry); err != nil {
+		fmt.Printf("⚠️  Failed to add %s: %v\n", name, err)
+		return 0, 0, 0
 	}
+	return 1, 0, 0
 }

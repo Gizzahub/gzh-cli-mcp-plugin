@@ -46,12 +46,13 @@ func runDisable(cmd *cobra.Command, args []string) error {
 	}
 
 	if !exists {
-		// Show available plugins
-		plugins, _ := writer.ListPlugins()
+		plugins, listErr := writer.ListPlugins()
 		fmt.Printf("Plugin '%s' not found in settings.\n\n", pluginID)
-		fmt.Println("Available plugins:")
-		for id := range plugins {
-			fmt.Printf("  - %s\n", id)
+		if listErr == nil {
+			fmt.Println("Available plugins:")
+			for id := range plugins {
+				fmt.Printf("  - %s\n", id)
+			}
 		}
 		return fmt.Errorf("plugin not found")
 	}

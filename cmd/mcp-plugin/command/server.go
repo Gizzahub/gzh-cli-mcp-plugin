@@ -129,10 +129,10 @@ func runServerStatus(args []string, checkHealth bool) error {
 		found = true
 
 		// Basic status
-		status := "disabled"
+		status := statusDisabled
 		statusIcon := "○"
 		if server.Enabled {
-			status = "enabled"
+			status = statusEnabled
 			statusIcon = "●"
 		}
 
@@ -166,68 +166,75 @@ func runServerInfo(name string) error {
 		if server.Name != name {
 			continue
 		}
-
-		fmt.Printf("Server: %s\n", server.Name)
-		fmt.Printf("─────────────────────────────────\n")
-
-		// Status
-		status := "disabled"
-		if server.Enabled {
-			status = "enabled"
-		}
-		fmt.Printf("Status: %s\n", status)
-		fmt.Printf("Type: %s\n", server.Type)
-		fmt.Printf("Source: %s\n", server.Source)
-
-		// Command-based server details
-		if server.Command != "" {
-			fmt.Printf("\nCommand Configuration:\n")
-			fmt.Printf("  Command: %s\n", server.Command)
-			if len(server.Args) > 0 {
-				fmt.Printf("  Args: %s\n", strings.Join(server.Args, " "))
-			}
-
-			// Check if command exists
-			path, err := exec.LookPath(server.Command)
-			if err != nil {
-				fmt.Printf("  ⚠️  Command not found in PATH\n")
-			} else {
-				fmt.Printf("  Path: %s\n", path)
-			}
-		}
-
-		// HTTP server details
-		if server.URL != "" {
-			fmt.Printf("\nHTTP Configuration:\n")
-			fmt.Printf("  URL: %s\n", server.URL)
-			if len(server.Headers) > 0 {
-				fmt.Printf("  Headers:\n")
-				for key, value := range server.Headers {
-					// Mask sensitive values
-					displayValue := value
-					if strings.Contains(strings.ToLower(key), "auth") ||
-						strings.Contains(strings.ToLower(key), "token") ||
-						strings.Contains(strings.ToLower(key), "key") {
-						if len(value) > 8 {
-							displayValue = value[:4] + "..." + value[len(value)-4:]
-						} else {
-							displayValue = "****"
-						}
-					}
-					fmt.Printf("    %s: %s\n", key, displayValue)
-				}
-			}
-		}
-
-		// Health check
-		fmt.Printf("\nHealth Check:\n")
-		health := checkServerHealth(server)
-		fmt.Printf("  %s\n", health)
-
+		printServerInfo(server)
 		return nil
 	}
 
 	return fmt.Errorf("server '%s' not found", name)
+}
+
+func printServerInfo(server config.MCPServer) {
+	fmt.Printf("Server: %s\n", server.Name)
+	fmt.Printf("─────────────────────────────────\n")
+
+	status := statusDisabled
+	if server.Enabled {
+		status = statusEnabled
+	}
+	fmt.Printf("Status: %s\n", status)
+	fmt.Printf("Type: %s\n", server.Type)
+	fmt.Printf("Source: %s\n", server.Source)
+
+	printCommandConfig(server)
+	printHTTPConfig(server)
+
+	fmt.Printf("\nHealth Check:\n")
+	fmt.Printf("  %s\n", checkServerHealth(server))
+}
+
+func printCommandConfig(server config.MCPServer) {
+	if server.Command == "" {
+		return
+	}
+	fmt.Printf("\nCommand Configuration:\n")
+	fmt.Printf("  Command: %s\n", server.Command)
+	if len(server.Args) > 0 {
+		fmt.Printf("  Args: %s\n", strings.Join(server.Args, " "))
+	}
+	path, err := exec.LookPath(server.Command)
+	if err != nil {
+		fmt.Printf("  ⚠️  Command not found in PATH\n")
+		return
+	}
+	fmt.Printf("  Path: %s\n", path)
+}
+
+func printHTTPConfig(server config.MCPServer) {
+	if server.URL == "" {
+		return
+	}
+	fmt.Printf("\nHTTP Configuration:\n")
+	fmt.Printf("  URL: %s\n", server.URL)
+	if len(server.Headers) == 0 {
+		return
+	}
+	fmt.Printf("  Headers:\n")
+	for key, value := range server.Headers {
+		fmt.Printf("    %s: %s\n", key, maskSensitiveHeader(key, value))
+	}
+}
+
+func maskSensitiveHeader(key, value string) string {
+	lower := strings.ToLower(key)
+	if !strings.Contains(lower, "auth") &&
+		!strings.Contains(lower, "token") &&
+		!strings.Contains(lower, "key") {
+		return value
+	}
+	if len(value) > 8 {
+		return value[:4] + "..." + value[len(value)-4:]
+	}
+	return "****"
 }
 
 func checkServerHealth(server config.MCPServer) string {
@@ -245,7 +252,7 @@ func checkHTTPHealth(url string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, http.NoBody)
 	if err != nil {
 		return fmt.Sprintf("❌ Invalid URL: %v", err)
 	}

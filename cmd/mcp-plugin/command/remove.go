@@ -49,22 +49,24 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	}
 
 	if !exists {
-		// Show available servers
-		servers, _ := writer.ListMCPServersGlobal()
+		servers, listErr := writer.ListMCPServersGlobal()
 		fmt.Printf("MCP server '%s' not found.\n\n", name)
-		if len(servers) > 0 {
+		if listErr == nil && len(servers) > 0 {
 			fmt.Println("Available servers:")
 			for serverName := range servers {
 				fmt.Printf("  - %s\n", serverName)
 			}
-		} else {
+		} else if listErr == nil {
 			fmt.Println("No MCP servers installed.")
 		}
 		return fmt.Errorf("server not found")
 	}
 
 	// Get server info before removing
-	servers, _ := writer.ListMCPServersGlobal()
+	servers, err := writer.ListMCPServersGlobal()
+	if err != nil {
+		return fmt.Errorf("failed to read servers: %w", err)
+	}
 	serverInfo := servers[name]
 
 	// Remove the server
