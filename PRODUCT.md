@@ -60,7 +60,10 @@ G4. **Command coherence**
 G5. **Baseline alignment**
 
 - Target: `.golangci.yml`(v2) 도입 + `go.mod` go directive를 devbox 툴체인(1.26)에
-  정렬 — 현재 미충족 (golangci 설정 없음, go 1.24)
+  정렬
+- `.golangci.yml`(v2)은 도입 완료. **Go 버전은 미충족** — `go.mod` 1.24로 패밀리에서
+  가장 뒤처져 있고(`.golangci.yml`의 `run.go`도 1.24), GUIDELINES §4 정렬 계획의
+  **우선 대상**이다
 
 ______________________________________________________________________
 
@@ -99,11 +102,12 @@ ______________________________________________________________________
 - 서버 정보 출력 시 auth/token/key 헤더 값을 마스킹한다
 - 설정 파일 백업·롤백은 없다 — 파괴적 범위를 넓히기 전에 도입해야 한다
 
-**Baseline (진행 중)**
+**Baseline**
 
-- `.golangci.yml` 미보유 (GUIDELINES §4 격차). 현재 `make lint`의 "0 issues"는
-  golangci-lint **기본 린터**만 돈 결과이며, `.make/vars.mk`(v1.62.2)와
-  CI(`latest`)가 서로 다른 버전을 가리킨다 — 공유 룰셋이 없다
+- GUIDELINES §3 베이스라인 충족 — `Makefile`·`.golangci.yml`(v2)·CI·`LICENSE`·
+  문서·본 PRODUCT.md 보유
+- `.make/vars.mk`(golangci-lint v1.62.2)와 CI(`latest`)가 서로 다른 린터 버전을
+  가리킨다 — 룰셋은 공유되나 버전은 아직 정렬되지 않았다
 
 ______________________________________________________________________
 
