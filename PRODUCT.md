@@ -3,7 +3,7 @@
 **Project**: gzh-cli-mcp-plugin (`mcp-plugin` binary)
 **Doc Type**: Goals + Constraints + Quality Gates
 **Status**: Active — 방향 확정 전, 최소 계약
-**Last Updated**: 2026-07-16
+**Last Updated**: 2026-07-17
 
 ______________________________________________________________________
 
@@ -40,16 +40,17 @@ G1. **Config-manager scope**
 G2. **Test coverage on the shipped path**
 
 - Target: 실사용 경로 `pkg/config` 커버리지 >= 50%
-- 현재 **15.3%**. 전체 10.9%이며, 높은 수치(usecase 85.4% · claudeconfig 73.3%)는
-  전부 **미연결 코드**에 붙어 있어 합산 커버리지가 실제 가치를 과대평가한다
+- 현재 **15.3%** (고아 패키지 삭제 후 합산 커버리지는 실사용 경로만 반영).
+  이전 합산 10.9%와 usecase/claudeconfig 고수치는 미연결 코드 인플레이션이었음
 
 G3. **Zero orphaned packages**
 
 - Target: import되지 않는 패키지 0개
-- 현재 **4개** — `application/usecase/plugin`, `infrastructure/repository`,
-  `domain/mcp`, `infrastructure/claudeconfig`. 11개 명령이 모두 `pkg/config`를
-  직접 호출하며 Ports&Adapters 골격은 어디에도 연결돼 있지 않다.
-  **연결하거나 삭제해야 한다 — 둘 중 하나를 고르는 것이 본 리포 최우선 결정이다**
+- **충족 (2026-07-17)**. 미연결 Ports&Adapters 골격 4패키지
+  (`application/usecase/plugin`, `infrastructure/repository`, `domain/mcp`,
+  `infrastructure/claudeconfig`) + 전용 port `application/port/output`를
+  **삭제**했다. 기능은 전부 실사용 경로 `pkg/config`에 이미 존재(중복 골격).
+  결정 근거: 기능 격차 없음 → 연결 비용 대비 가치 없음 → 삭제
 
 G4. **Command coherence**
 
@@ -133,7 +134,8 @@ ______________________________________________________________________
 
 - **MCP 프로토콜 자체 구현은 SOUL 게이트 1(재발명 금지)에서 거절된다** — Claude
   Code를 감쌀 뿐이다
-- 미연결 계층(G3)에 코드를 추가하지 않는다 — 먼저 연결 여부를 결정한다
+- 미연결 계층을 재도입하지 않는다 — G3는 삭제로 해소됨; 새 계층은 실사용
+  명령이 먼저 호출할 때만 추가한다
 - 새 기능은 SOUL.md 4-게이트(틈 · 라이브러리 · 대량/전환 · 날카로움)를 통과해야 한다
 - Guardrails 위반은 문서화된 예외를 요구한다
 - Quality Gates 미충족 시 릴리스는 차단된다
