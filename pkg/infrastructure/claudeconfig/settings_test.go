@@ -185,7 +185,10 @@ func TestReader_PreservesUnknownFields(t *testing.T) {
 		t.Error("alwaysThinkingEnabled should be preserved")
 	}
 
-	plugins := result["enabledPlugins"].(map[string]any)
+	plugins, ok := result["enabledPlugins"].(map[string]any)
+	if !ok {
+		t.Fatal("enabledPlugins should be map[string]any")
+	}
 	if plugins["test@pub"] != true {
 		t.Error("plugin should be enabled")
 	}

@@ -4,6 +4,13 @@
 // Package config provides configuration reading for Claude Code MCP settings.
 package config
 
+// MCP server type wire values (Claude Code / MCP protocol).
+const (
+	TypeHTTP    = "http"
+	TypeCommand = "command"
+	TypeStdio   = "stdio"
+)
+
 // MCPServer represents an MCP server configuration.
 type MCPServer struct {
 	Name    string            `json:"name"`
@@ -23,7 +30,7 @@ type ClaudeConfig struct {
 
 // ProjectConfig represents per-project configuration.
 type ProjectConfig struct {
-	MCPServers map[string]MCPServerConfig `json:"mcpServers"`
+	MCPServers map[string]MCPServerConfig `json:"mcpServers"` //nolint:tagliatelle // external protocol wire format
 }
 
 // MCPServerConfig represents the raw MCP server config from JSON.
@@ -37,10 +44,35 @@ type MCPServerConfig struct {
 
 // PluginMCPConfig represents .mcp.json structure.
 type PluginMCPConfig struct {
-	MCPServers map[string]MCPServerConfig `json:"mcpServers"`
+	MCPServers map[string]MCPServerConfig `json:"mcpServers"` //nolint:tagliatelle // external protocol wire format
 }
 
 // SettingsConfig represents ~/.claude/settings.json structure.
 type SettingsConfig struct {
-	EnabledPlugins map[string]bool `json:"enabledPlugins"`
+	EnabledPlugins map[string]bool `json:"enabledPlugins"` //nolint:tagliatelle // external protocol wire format
+}
+
+// resolveServerType picks the configured type or infers from fields.
+func resolveServerType(cfg MCPServerConfig) string {
+	switch {
+	case cfg.Type != "":
+		return cfg.Type
+	case cfg.Command != "":
+		return TypeCommand
+	default:
+		return TypeHTTP
+	}
+}
+
+// serverFromConfig builds an MCPServer from raw config fields.
+func serverFromConfig(name, source string, cfg MCPServerConfig) MCPServer {
+	return MCPServer{
+		Name:    name,
+		Type:    resolveServerType(cfg),
+		URL:     cfg.URL,
+		Command: cfg.Command,
+		Args:    cfg.Args,
+		Headers: cfg.Headers,
+		Source:  source,
+	}
 }

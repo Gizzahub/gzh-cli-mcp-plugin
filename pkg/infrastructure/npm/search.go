@@ -2,6 +2,7 @@
 package npm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -81,7 +82,13 @@ func (c *Client) Search(query string, limit int) (*SearchResult, error) {
 	searchURL := fmt.Sprintf("%s/-/v1/search?text=%s&size=%d",
 		c.baseURL, url.QueryEscape(searchQuery), limit)
 
-	resp, err := c.httpClient.Get(searchURL)
+	// No caller context on this exported API; client timeout bounds the request.
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, searchURL, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("search npm: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("search npm: %w", err)
 	}
@@ -108,7 +115,13 @@ func (c *Client) Search(query string, limit int) (*SearchResult, error) {
 func (c *Client) GetPackage(name string) (*PackageDetail, error) {
 	pkgURL := fmt.Sprintf("%s/%s", c.baseURL, url.PathEscape(name))
 
-	resp, err := c.httpClient.Get(pkgURL)
+	// No caller context on this exported API; client timeout bounds the request.
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, pkgURL, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("get package: %w", err)
+	}
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("get package: %w", err)
 	}
@@ -138,7 +151,7 @@ func (c *Client) GetPackage(name string) (*PackageDetail, error) {
 type PackageDetail struct {
 	Name        string            `json:"name"`
 	Description string            `json:"description"`
-	DistTags    map[string]string `json:"dist-tags"`
+	DistTags    map[string]string `json:"dist-tags"` //nolint:tagliatelle // external protocol wire format (npm registry)
 	Versions    map[string]struct {
 		Name    string `json:"name"`
 		Version string `json:"version"`

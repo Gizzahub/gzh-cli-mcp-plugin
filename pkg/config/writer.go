@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 )
 
+// filePerm is the permission for user-local Claude config files (owner read/write only).
+const filePerm = 0o600
+
 // Writer writes Claude Code MCP configurations.
 type Writer struct {
 	homeDir string
@@ -17,7 +20,10 @@ type Writer struct {
 
 // NewWriter creates a new configuration writer.
 func NewWriter() *Writer {
-	home, _ := os.UserHomeDir()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = ""
+	}
 	return &Writer{homeDir: home}
 }
 
@@ -25,7 +31,7 @@ func NewWriter() *Writer {
 func (w *Writer) SetPluginEnabled(pluginID string, enabled bool) error {
 	path := filepath.Join(w.homeDir, ".claude", "settings.json")
 
-	// Read existing settings
+	// #nosec G304 -- path is constructed from the user home directory
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read settings: %w", err)
@@ -53,8 +59,7 @@ func (w *Writer) SetPluginEnabled(pluginID string, enabled bool) error {
 		return fmt.Errorf("failed to marshal settings: %w", err)
 	}
 
-	// Write to file
-	if err := os.WriteFile(path, output, 0644); err != nil {
+	if err := os.WriteFile(path, output, filePerm); err != nil {
 		return fmt.Errorf("failed to write settings: %w", err)
 	}
 
@@ -65,6 +70,7 @@ func (w *Writer) SetPluginEnabled(pluginID string, enabled bool) error {
 func (w *Writer) ListPlugins() (map[string]bool, error) {
 	path := filepath.Join(w.homeDir, ".claude", "settings.json")
 
+	// #nosec G304 -- path is constructed from the user home directory
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read settings: %w", err)
@@ -101,7 +107,7 @@ func (w *Writer) PluginExists(pluginID string) (bool, error) {
 }
 
 // GetPluginStatus returns the current enabled status of a plugin.
-func (w *Writer) GetPluginStatus(pluginID string) (enabled bool, exists bool, err error) {
+func (w *Writer) GetPluginStatus(pluginID string) (enabled, exists bool, err error) {
 	plugins, err := w.ListPlugins()
 	if err != nil {
 		return false, false, err
@@ -124,6 +130,7 @@ type MCPServerEntry struct {
 func (w *Writer) AddMCPServer(name string, entry MCPServerEntry) error {
 	path := filepath.Join(w.homeDir, ".claude.json")
 
+	// #nosec G304 -- path is constructed from the user home directory
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read claude.json: %w", err)
@@ -175,7 +182,7 @@ func (w *Writer) AddMCPServer(name string, entry MCPServerEntry) error {
 		return fmt.Errorf("failed to marshal claude.json: %w", err)
 	}
 
-	if err := os.WriteFile(path, output, 0644); err != nil {
+	if err := os.WriteFile(path, output, filePerm); err != nil {
 		return fmt.Errorf("failed to write claude.json: %w", err)
 	}
 
@@ -186,6 +193,7 @@ func (w *Writer) AddMCPServer(name string, entry MCPServerEntry) error {
 func (w *Writer) RemoveMCPServer(name string) error {
 	path := filepath.Join(w.homeDir, ".claude.json")
 
+	// #nosec G304 -- path is constructed from the user home directory
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read claude.json: %w", err)
@@ -213,7 +221,7 @@ func (w *Writer) RemoveMCPServer(name string) error {
 		return fmt.Errorf("failed to marshal claude.json: %w", err)
 	}
 
-	if err := os.WriteFile(path, output, 0644); err != nil {
+	if err := os.WriteFile(path, output, filePerm); err != nil {
 		return fmt.Errorf("failed to write claude.json: %w", err)
 	}
 
@@ -224,6 +232,7 @@ func (w *Writer) RemoveMCPServer(name string) error {
 func (w *Writer) ListMCPServersGlobal() (map[string]MCPServerEntry, error) {
 	path := filepath.Join(w.homeDir, ".claude.json")
 
+	// #nosec G304 -- path is constructed from the user home directory
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read claude.json: %w", err)

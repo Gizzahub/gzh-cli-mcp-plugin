@@ -16,7 +16,10 @@ type Reader struct {
 
 // NewReader creates a new configuration reader.
 func NewReader() *Reader {
-	home, _ := os.UserHomeDir()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = ""
+	}
 	return &Reader{homeDir: home}
 }
 
@@ -45,8 +48,11 @@ func (r *Reader) ListMCPServers() ([]MCPServer, error) {
 		servers = append(servers, pluginServers...)
 	}
 
-	// Check enabled status from settings.json
-	enabledPlugins, _ := r.readSettings()
+	// Check enabled status from settings.json (missing settings is non-fatal)
+	enabledPlugins, err := r.readSettings()
+	if err != nil {
+		enabledPlugins = map[string]bool{}
+	}
 	for i := range servers {
 		if enabled, ok := enabledPlugins[servers[i].Name]; ok {
 			servers[i].Enabled = enabled
@@ -58,6 +64,7 @@ func (r *Reader) ListMCPServers() ([]MCPServer, error) {
 
 func (r *Reader) readClaudeJSON() ([]MCPServer, error) {
 	path := filepath.Join(r.homeDir, ".claude.json")
+	// #nosec G304 -- path is constructed from the user home directory
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -71,22 +78,7 @@ func (r *Reader) readClaudeJSON() ([]MCPServer, error) {
 	var servers []MCPServer
 	for _, proj := range config.Projects {
 		for name, cfg := range proj.MCPServers {
-			server := MCPServer{
-				Name:    name,
-				URL:     cfg.URL,
-				Command: cfg.Command,
-				Args:    cfg.Args,
-				Headers: cfg.Headers,
-				Source:  path,
-			}
-			if cfg.Type != "" {
-				server.Type = cfg.Type
-			} else if cfg.Command != "" {
-				server.Type = "command"
-			} else {
-				server.Type = "http"
-			}
-			servers = append(servers, server)
+			servers = append(servers, serverFromConfig(name, path, cfg))
 		}
 	}
 
@@ -107,7 +99,6 @@ func (r *Reader) readPluginConfigs() ([]MCPServer, error) {
 			continue
 		}
 
-		// Look for .mcp.json in plugin subdirectories
 		pluginDir := filepath.Join(cacheDir, entry.Name())
 		subEntries, err := os.ReadDir(pluginDir)
 		if err != nil {
@@ -120,59 +111,42 @@ func (r *Reader) readPluginConfigs() ([]MCPServer, error) {
 			}
 
 			mcpPath := filepath.Join(pluginDir, subEntry.Name(), ".mcp.json")
-			data, err := os.ReadFile(mcpPath)
+			parsed, err := r.parsePluginMCPFile(mcpPath)
 			if err != nil {
 				continue
 			}
+			servers = append(servers, parsed...)
+		}
+	}
 
-			// Try parsing as map[string]MCPServerConfig first
-			var rawConfig map[string]MCPServerConfig
-			if err := json.Unmarshal(data, &rawConfig); err == nil {
-				for name, cfg := range rawConfig {
-					if name == "mcpServers" {
-						continue // Skip if it's wrapped
-					}
-					server := MCPServer{
-						Name:    name,
-						URL:     cfg.URL,
-						Command: cfg.Command,
-						Args:    cfg.Args,
-						Headers: cfg.Headers,
-						Source:  mcpPath,
-					}
-					if cfg.Type != "" {
-						server.Type = cfg.Type
-					} else if cfg.Command != "" {
-						server.Type = "command"
-					} else {
-						server.Type = "http"
-					}
-					servers = append(servers, server)
-				}
-			}
+	return servers, nil
+}
 
-			// Try parsing as PluginMCPConfig
-			var pluginConfig PluginMCPConfig
-			if err := json.Unmarshal(data, &pluginConfig); err == nil && len(pluginConfig.MCPServers) > 0 {
-				for name, cfg := range pluginConfig.MCPServers {
-					server := MCPServer{
-						Name:    name,
-						URL:     cfg.URL,
-						Command: cfg.Command,
-						Args:    cfg.Args,
-						Headers: cfg.Headers,
-						Source:  mcpPath,
-					}
-					if cfg.Type != "" {
-						server.Type = cfg.Type
-					} else if cfg.Command != "" {
-						server.Type = "command"
-					} else {
-						server.Type = "http"
-					}
-					servers = append(servers, server)
-				}
+func (r *Reader) parsePluginMCPFile(mcpPath string) ([]MCPServer, error) {
+	// #nosec G304 -- path is under the known Claude plugin cache directory
+	data, err := os.ReadFile(mcpPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var servers []MCPServer
+
+	// Try parsing as map[string]MCPServerConfig first
+	var rawConfig map[string]MCPServerConfig
+	if err := json.Unmarshal(data, &rawConfig); err == nil {
+		for name, cfg := range rawConfig {
+			if name == "mcpServers" {
+				continue // Skip if it's wrapped
 			}
+			servers = append(servers, serverFromConfig(name, mcpPath, cfg))
+		}
+	}
+
+	// Try parsing as PluginMCPConfig
+	var pluginConfig PluginMCPConfig
+	if err := json.Unmarshal(data, &pluginConfig); err == nil && len(pluginConfig.MCPServers) > 0 {
+		for name, cfg := range pluginConfig.MCPServers {
+			servers = append(servers, serverFromConfig(name, mcpPath, cfg))
 		}
 	}
 
@@ -181,6 +155,7 @@ func (r *Reader) readPluginConfigs() ([]MCPServer, error) {
 
 func (r *Reader) readSettings() (map[string]bool, error) {
 	path := filepath.Join(r.homeDir, ".claude", "settings.json")
+	// #nosec G304 -- path is constructed from the user home directory
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

@@ -9,12 +9,15 @@ import (
 	"path/filepath"
 )
 
+// filePerm is the permission for user-local Claude settings (owner read/write only).
+const filePerm = 0o600
+
 // Settings represents the ~/.claude/settings.json structure.
 type Settings struct {
-	Schema         string          `json:"$schema,omitempty"`
+	Schema         string          `json:"$schema,omitempty"` //nolint:tagliatelle // external protocol wire format
 	Permissions    *Permissions    `json:"permissions,omitempty"`
 	Hooks          map[string]any  `json:"hooks,omitempty"`
-	EnabledPlugins map[string]bool `json:"enabledPlugins,omitempty"`
+	EnabledPlugins map[string]bool `json:"enabledPlugins,omitempty"` //nolint:tagliatelle // external protocol wire format
 	// Preserve other fields
 	Extra map[string]any `json:"-"`
 }
@@ -23,7 +26,7 @@ type Settings struct {
 type Permissions struct {
 	Allow       []string `json:"allow,omitempty"`
 	Deny        []string `json:"deny,omitempty"`
-	DefaultMode string   `json:"defaultMode,omitempty"`
+	DefaultMode string   `json:"defaultMode,omitempty"` //nolint:tagliatelle // external protocol wire format
 }
 
 // Reader reads Claude Code configuration.
@@ -35,7 +38,10 @@ type Reader struct {
 // If configDir is empty, uses ~/.claude.
 func NewReader(configDir string) *Reader {
 	if configDir == "" {
-		homeDir, _ := os.UserHomeDir()
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			homeDir = ""
+		}
 		configDir = filepath.Join(homeDir, ".claude")
 	}
 	return &Reader{configDir: configDir}
@@ -49,6 +55,7 @@ func (r *Reader) SettingsPath() string {
 // ReadSettings reads the settings.json file.
 func (r *Reader) ReadSettings() (*Settings, error) {
 	path := r.SettingsPath()
+	// #nosec G304 -- path is SettingsPath under a known config directory
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -78,6 +85,7 @@ func (r *Reader) WriteSettings(settings *Settings) error {
 	path := r.SettingsPath()
 
 	// Read existing file to preserve unknown fields
+	// #nosec G304 -- path is SettingsPath under a known config directory
 	existingData, err := os.ReadFile(path)
 	if err == nil {
 		var existing map[string]any
@@ -88,7 +96,7 @@ func (r *Reader) WriteSettings(settings *Settings) error {
 			if err != nil {
 				return fmt.Errorf("marshal settings: %w", err)
 			}
-			return os.WriteFile(path, data, 0644)
+			return os.WriteFile(path, data, filePerm)
 		}
 	}
 
@@ -98,7 +106,7 @@ func (r *Reader) WriteSettings(settings *Settings) error {
 		return fmt.Errorf("marshal settings: %w", err)
 	}
 
-	return os.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, filePerm)
 }
 
 // ListEnabledPlugins returns a list of enabled plugin IDs.

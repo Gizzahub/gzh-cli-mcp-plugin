@@ -7,8 +7,8 @@ import (
 	"github.com/gizzahub/gzh-cli-mcp-plugin/pkg/application/port/output"
 )
 
-// PluginInfo represents information about a plugin.
-type PluginInfo struct {
+// Info represents information about a plugin.
+type Info struct {
 	ID        string
 	Name      string
 	Publisher string
@@ -26,20 +26,20 @@ func NewListUseCase(repo output.PluginRepository) *ListUseCase {
 }
 
 // Execute lists all plugins.
-func (uc *ListUseCase) Execute(enabledOnly bool) ([]PluginInfo, error) {
+func (uc *ListUseCase) Execute(enabledOnly bool) ([]Info, error) {
 	plugins, err := uc.repo.ListAll()
 	if err != nil {
 		return nil, err
 	}
 
-	var result []PluginInfo
+	var result []Info
 	for id, enabled := range plugins {
 		if enabledOnly && !enabled {
 			continue
 		}
 
 		name, publisher := parsePluginID(id)
-		result = append(result, PluginInfo{
+		result = append(result, Info{
 			ID:        id,
 			Name:      name,
 			Publisher: publisher,
