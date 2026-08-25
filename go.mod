@@ -2,7 +2,7 @@ module github.com/gizzahub/gzh-cli-mcp-plugin
 
 go 1.26
 
-toolchain go1.26.6
+toolchain go1.26.7
 
 require github.com/spf13/cobra v1.10.2
 
