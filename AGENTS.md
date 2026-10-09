@@ -1,4 +1,4 @@
-# CLAUDE.md
+# gzh-cli-mcp-plugin
 
 This file provides guidance to Claude Code when working with code in this repository.
 
@@ -102,9 +102,6 @@ import (
 
 ```
 {type}({scope}): {imperative verb} {what}
-
-Model: claude-{model}
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 **Scopes**: `domain`, `application`, `infrastructure`, `cli`, `build`, `docs`, `test`
