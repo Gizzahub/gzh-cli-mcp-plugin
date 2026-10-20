@@ -30,8 +30,9 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          # v2.13.0+ supports Go 1.27; keep the exact release deterministic.
-          version: v2.13.1
+          # Must be built with Go 1.27 to read go1.27.3 export data (v2.13.1 is not);
+          # keep the exact release deterministic.
+          version: v2.15.0
 
   vulncheck:
     name: Vulncheck
