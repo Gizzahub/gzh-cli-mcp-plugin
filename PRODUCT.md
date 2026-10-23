@@ -107,8 +107,8 @@ ______________________________________________________________________
 
 - GUIDELINES §3 베이스라인 충족 — `Makefile`·`.golangci.yml`(v2)·CI·`LICENSE`·
   문서·본 PRODUCT.md 보유
-- `.make/vars.mk`(golangci-lint v1.62.2)와 CI(`latest`)가 서로 다른 린터 버전을
-  가리킨다 — 룰셋은 공유되나 버전은 아직 정렬되지 않았다
+- 린터 버전은 CI(`.github/workflows/ci.yml`, golangci-lint v2.15.0)만 고정한다 —
+  로컬 `make lint` 는 PATH 의 golangci-lint 를 그대로 쓴다
 
 ______________________________________________________________________
 

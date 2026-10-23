@@ -23,6 +23,3 @@ GOVET := $(GO) vet
 COVERAGE_OUT := coverage.out
 COVERAGE_HTML := coverage.html
 TEST_TIMEOUT := 5m
-
-# Linter settings
-GOLANGCI_LINT_VERSION := v1.62.2

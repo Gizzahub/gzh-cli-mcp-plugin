@@ -19,7 +19,7 @@ lint: ## Run linter
 	@if command -v golangci-lint >/dev/null 2>&1; then \
 		golangci-lint run ./...; \
 	else \
-		echo "golangci-lint not installed. Run: make install-tools" >&2; \
+		echo "golangci-lint not installed. Install the version pinned in .github/workflows/ci.yml" >&2; \
 		exit 1; \
 	fi
 
