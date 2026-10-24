@@ -9,7 +9,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 **Binary**: `mcp-plugin` (MCP Plugin Management CLI)
 **Status**: Initial stage - project structure only
 **Architecture**: Clean Architecture + Hexagonal (Ports & Adapters)
-**Go Version**: 1.24+
+**Go Version**: 1.26+
 
 MCP plugin management tool for Claude Code integration:
 - **List**: Show installed MCP servers

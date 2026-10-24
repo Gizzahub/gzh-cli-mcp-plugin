@@ -62,9 +62,8 @@ G5. **Baseline alignment**
 
 - Target: `.golangci.yml`(v2) 도입 + `go.mod` go directive를 devbox 툴체인(1.26)에
   정렬
-- `.golangci.yml`(v2)은 도입 완료. **Go 버전은 미충족** — `go.mod` 1.24로 패밀리에서
-  가장 뒤처져 있고(`.golangci.yml`의 `run.go`도 1.24), GUIDELINES §4 정렬 계획의
-  **우선 대상**이다
+- 충족 — `.golangci.yml`(v2) 도입 완료, `go.mod` go directive 1.26(`9de8c4f`)과
+  `.golangci.yml`의 `run.go` 1.26이 devbox 툴체인에 정렬됐다
 
 ______________________________________________________________________
 
@@ -94,8 +93,7 @@ ______________________________________________________________________
 
 **Compatibility**
 
-- Go 1.24 (`go.mod`) — devbox 툴체인 1.26 대비 하위. GUIDELINES §1에 따라 릴리스
-  시점에 상향 정렬한다
+- Go 1.26 (`go.mod`) — devbox 툴체인과 같다
 
 **Safety**
 
