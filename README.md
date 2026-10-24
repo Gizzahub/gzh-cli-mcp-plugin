@@ -6,7 +6,7 @@
 listing installed servers, searching npm for packages, and importing/exporting
 MCP configuration.
 
-**Module**: `github.com/gizzahub/gzh-cli-mcp-plugin` · **Binary**: `mcp-plugin` · **Go**: 1.24
+**Module**: `github.com/gizzahub/gzh-cli-mcp-plugin` · **Binary**: `mcp-plugin` · **Go**: 1.26
 
 > **Status**: Early stage. Architecture is Clean/Hexagonal (Ports & Adapters);
 > commands and surface area are still evolving.
